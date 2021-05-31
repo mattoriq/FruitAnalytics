@@ -1,6 +1,8 @@
 package com.akiramenaide.capstoneproject.ui.detail
 
+import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +20,6 @@ import com.github.mikephil.charting.formatter.PercentFormatter
 import org.koin.android.viewmodel.ext.android.viewModel
 import java.util.ArrayList
 
-
 class DetailFragment : Fragment() {
     private val brightColors = MyColors.brightColorArray
     private lateinit var binding: FragmentDetailBinding
@@ -29,23 +30,25 @@ class DetailFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Inflate the layout for this fragment
         binding = FragmentDetailBinding.inflate(layoutInflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        pieChart = binding.pieChart
-        detailViewModel.fruitList.observe(viewLifecycleOwner, {
-            drawPieChart(it)
-            drawRecyclerView(it)
-        })
+        if (activity != null) {
+            pieChart = binding.pieChart
+            detailViewModel.fruitList.observe(viewLifecycleOwner, {
+                drawPieChart(it)
+                drawRecyclerView(it)
+            })
+        }
     }
 
     private fun drawPieChart(fruits: List<Fruit>){
         val pieValues = ArrayList<PieEntry>()
         for (element in fruits) {
+            Log.d("FruitName", element.name)
             pieValues.add(PieEntry(element.total.toFloat(), element.name))
         }
         val dataSet = PieDataSet(pieValues, "")
@@ -55,14 +58,18 @@ class DetailFragment : Fragment() {
                 setValueFormatter(PercentFormatter())
                 setValueTextSize(12f)
             }
-            setDrawEntryLabels(false)
+            setEntryLabelColor(Color.BLACK)
+            setEntryLabelTextSize(10f)
             setHoleColor(darkCyan)
             isRotationEnabled = false
             setUsePercentValues(true)
             animateY(1000)
             description.text = ""
+            legend.isEnabled = false
+            invalidate()
         }
         dataSet.colors = brightColors
+
     }
 
     private fun drawRecyclerView(fruits: List<Fruit>){
@@ -71,6 +78,7 @@ class DetailFragment : Fragment() {
         fruitAdapter.notifyDataSetChanged()
 
         with(binding.rvFruits) {
+            isNestedScrollingEnabled = false
             layoutManager = LinearLayoutManager(context)
             adapter = fruitAdapter
             setHasFixedSize(true)

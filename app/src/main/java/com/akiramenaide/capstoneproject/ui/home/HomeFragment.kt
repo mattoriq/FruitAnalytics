@@ -8,12 +8,18 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
 import android.provider.MediaStore
+import android.telecom.Call
+import android.util.Base64
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import com.akiramenaide.capstoneproject.core.data.source.remote.api.ApiService
+import com.akiramenaide.capstoneproject.core.data.source.remote.response.GetIndex
+import com.akiramenaide.capstoneproject.core.data.source.remote.response.PostedData
+import com.akiramenaide.capstoneproject.core.data.source.remote.response.PostedImage
 import com.akiramenaide.capstoneproject.core.domain.model.Fruit
 import com.akiramenaide.capstoneproject.databinding.FragmentHomeBinding
 import com.akiramenaide.capstoneproject.ml.FruitModel
@@ -22,13 +28,14 @@ import com.akiramenaide.capstoneproject.ui.util.PredictedObject
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.google.gson.Gson
+import org.json.JSONObject
 import org.koin.android.viewmodel.ext.android.viewModel
 import org.tensorflow.lite.DataType
-
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.ArrayList
@@ -122,6 +129,7 @@ class HomeFragment : Fragment() {
     private fun drawBarChart(fruits: List<Fruit>){
         val barValues = ArrayList<BarEntry>()
         val fruitNames = ArrayList<String>()
+        var max = 0f
         var x = 0f
         for (element in fruits) {
             barValues.add(BarEntry(
@@ -130,6 +138,9 @@ class HomeFragment : Fragment() {
             )
             x++
             fruitNames.add(element.name)
+            if (element.total.toFloat() > max) {
+                max = element.total.toFloat()
+            }
         }
         val dataSet = BarDataSet(barValues, "Fruits")
 
@@ -141,8 +152,13 @@ class HomeFragment : Fragment() {
             setFitBars(true)
             setScaleEnabled(false)
             setPinchZoom(false)
-            xAxis.valueFormatter = IndexAxisValueFormatter(fruitNames)
-            xAxis.labelCount = fruitNames.size
+            xAxis.apply {
+                valueFormatter = IndexAxisValueFormatter(fruitNames)
+                labelCount = fruitNames.size
+                yOffset = 5f
+            }
+            axisLeft.axisMinimum = 0f
+            axisRight.axisMinimum = 0f
             animateY(1000)
             invalidate()
         }
@@ -157,7 +173,6 @@ class HomeFragment : Fragment() {
         return inputString.split("\n")
     }
 
-
     private fun getImage() {
         val intent = Intent(Intent.ACTION_PICK)
         intent.type = "image/*"
@@ -168,6 +183,15 @@ class HomeFragment : Fragment() {
         myBitmap?.let { originalBitmap ->
             val resizedImg = Bitmap.createScaledBitmap(originalBitmap, 224, 224, true)
             fragmentHomeBinding.myImg.setImageBitmap(resizedImg)
+
+            /*
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            resizedImg.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+            val imageBytes = byteArrayOutputStream.toByteArray()
+            val imgString = Base64.encodeToString(imageBytes, Base64.DEFAULT)
+            Log.d("Base64", imgString)
+
+             */
 
             val input = ByteBuffer.allocateDirect(224 * 224 * 3 * 4).order(ByteOrder.nativeOrder())
 
@@ -189,10 +213,26 @@ class HomeFragment : Fragment() {
                 }
             }
 
+            /*
+            for (i in input.array()){
+                Log.d("ByteBuffer", i.toString())
+            }
+             */
+
+            //postString()
+
             val model = FruitModel.newInstance(requireContext())
             val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
 
             inputFeature0.loadBuffer(input)
+
+            val myData = PostedData(inputFeature0.floatArray)
+            val jsonString = Gson().toJson(myData)
+            //val output = "{"
+
+            Log.d("InputString", jsonString)
+
+            postString(jsonString)
 
             val outputs = model.process(inputFeature0)
             val outputFeature0 = outputs.outputFeature0AsTensorBuffer
@@ -208,6 +248,37 @@ class HomeFragment : Fragment() {
         }
 
         return null
+    }
+
+    private fun postString(buffer: String) {
+        ApiService.api.getPredict(buffer).enqueue(object : Callback<PostedImage> {
+            override fun onResponse(
+                call: retrofit2.Call<PostedImage>,
+                response: Response<PostedImage>
+            ) {
+                val outputStream = "${response.body()?.percentage}, ${response.body()?.predClass}, ${response.body()?.prediction}"
+                Log.d("onResponse Success", response.code().toString())
+                Log.d("Object", outputStream)
+            }
+
+            override fun onFailure(call: retrofit2.Call<PostedImage>, t: Throwable) {
+                Log.e("onFailure", t.message.toString())
+            }
+
+        })
+
+//        ApiService.api.getValue().enqueue(object : Callback<GetIndex>{
+//            override fun onResponse(call: retrofit2.Call<GetIndex>, response: Response<GetIndex>) {
+//                val outputStream = "${response.body()?.data}, ${response.body()?.status}"
+//                Log.d("onResponse Success", response.code().toString())
+//                Log.d("Object", outputStream)
+//            }
+//
+//            override fun onFailure(call: retrofit2.Call<GetIndex>, t: Throwable) {
+//                Log.e("onFailure", t.message.toString())
+//            }
+//
+//        })
     }
 
     private fun getMax(arr: FloatArray): PredictedObject {

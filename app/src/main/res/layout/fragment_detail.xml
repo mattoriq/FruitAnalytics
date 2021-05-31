@@ -15,7 +15,7 @@
         android:background="#D8E3E7">
 
         <androidx.cardview.widget.CardView
-            android:id="@+id/cardView2"
+            android:id="@+id/card_view"
             android:layout_width="350dp"
             android:layout_height="360dp"
             android:layout_marginTop="32dp"
@@ -48,11 +48,11 @@
             android:id="@+id/rv_fruits"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/padding_giant"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/cardView2"
+            app:layout_constraintTop_toBottomOf="@+id/card_view"
             tools:listitem="@layout/list_detail" />
-
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

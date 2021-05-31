@@ -16,4 +16,5 @@
     <string name="pick_img">pick image</string>
     <string name="img">image</string>
     <string name="insert_db">insert data</string>
+    <string name="no_db">No Data Found in Database</string>
 </resources>
