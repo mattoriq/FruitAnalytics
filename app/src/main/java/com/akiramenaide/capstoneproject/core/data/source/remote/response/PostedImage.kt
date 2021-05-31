@@ -8,9 +8,13 @@ data class PostedImage (
     val predClass: Int,
     val className: String,
     val percentage: Float,
-    val prediction: ArrayList<Float>,
+    val prediction: List<List<Double>>,
     val data: String
     )
+
+//data class Prediction (
+//    val num: Double
+//    )
 
 data class PostedData (
     val data: FloatArray

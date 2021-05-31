@@ -16,6 +16,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.akiramenaide.capstoneproject.core.data.source.remote.api.ApiService
 import com.akiramenaide.capstoneproject.core.data.source.remote.response.GetIndex
 import com.akiramenaide.capstoneproject.core.data.source.remote.response.PostedData
@@ -29,6 +30,10 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okio.Utf8
 import org.json.JSONObject
 import org.koin.android.viewmodel.ext.android.viewModel
 import org.tensorflow.lite.DataType
@@ -184,14 +189,13 @@ class HomeFragment : Fragment() {
             val resizedImg = Bitmap.createScaledBitmap(originalBitmap, 224, 224, true)
             fragmentHomeBinding.myImg.setImageBitmap(resizedImg)
 
-            /*
             val byteArrayOutputStream = ByteArrayOutputStream()
-            resizedImg.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+            originalBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
             val imageBytes = byteArrayOutputStream.toByteArray()
-            val imgString = Base64.encodeToString(imageBytes, Base64.DEFAULT)
-            Log.d("Base64", imgString)
+            val imgString = Base64.encode(imageBytes, Base64.DEFAULT)
 
-             */
+//            val decodedData = Base64.decode(imgString, Base64.DEFAULT)
+            val utfString = String(imgString, charset("UTF-8"))
 
             val input = ByteBuffer.allocateDirect(224 * 224 * 3 * 4).order(ByteOrder.nativeOrder())
 
@@ -226,9 +230,15 @@ class HomeFragment : Fragment() {
 
             inputFeature0.loadBuffer(input)
 
-            val myData = PostedData(inputFeature0.floatArray)
-            val jsonString = Gson().toJson(myData)
-            //val output = "{"
+//            val myData = PostedData(inputFeature0.floatArray)
+//
+//            val q = inputFeature0.floatArray
+//            val arr = arrayListOf<Float>()
+//            for (x in q){
+//                arr.add(x)
+//            }
+
+            val jsonString = "{\"data\": \"$utfString\"}"
 
             Log.d("InputString", jsonString)
 
@@ -256,7 +266,7 @@ class HomeFragment : Fragment() {
                 call: retrofit2.Call<PostedImage>,
                 response: Response<PostedImage>
             ) {
-                val outputStream = "${response.body()?.percentage}, ${response.body()?.predClass}, ${response.body()?.prediction}"
+                val outputStream = "${response.body()?.percentage}, ${response.body()?.predClass}, ${response.body()?.prediction}, ${response.body()?.className}"
                 Log.d("onResponse Success", response.code().toString())
                 Log.d("Object", outputStream)
             }
@@ -266,19 +276,6 @@ class HomeFragment : Fragment() {
             }
 
         })
-
-//        ApiService.api.getValue().enqueue(object : Callback<GetIndex>{
-//            override fun onResponse(call: retrofit2.Call<GetIndex>, response: Response<GetIndex>) {
-//                val outputStream = "${response.body()?.data}, ${response.body()?.status}"
-//                Log.d("onResponse Success", response.code().toString())
-//                Log.d("Object", outputStream)
-//            }
-//
-//            override fun onFailure(call: retrofit2.Call<GetIndex>, t: Throwable) {
-//                Log.e("onFailure", t.message.toString())
-//            }
-//
-//        })
     }
 
     private fun getMax(arr: FloatArray): PredictedObject {
