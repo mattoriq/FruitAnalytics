@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
 import android.provider.MediaStore
-import android.telecom.Call
 import android.util.Base64
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -16,10 +15,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
 import com.akiramenaide.capstoneproject.core.data.source.remote.api.ApiService
-import com.akiramenaide.capstoneproject.core.data.source.remote.response.GetIndex
-import com.akiramenaide.capstoneproject.core.data.source.remote.response.PostedData
 import com.akiramenaide.capstoneproject.core.data.source.remote.response.PostedImage
 import com.akiramenaide.capstoneproject.core.domain.model.Fruit
 import com.akiramenaide.capstoneproject.databinding.FragmentHomeBinding
@@ -29,12 +25,6 @@ import com.akiramenaide.capstoneproject.ui.util.PredictedObject
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
-import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import okio.Utf8
-import org.json.JSONObject
 import org.koin.android.viewmodel.ext.android.viewModel
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
@@ -44,7 +34,6 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.ArrayList
-
 
 class HomeFragment : Fragment() {
     private val brightColors = MyColors.brightColorArray
@@ -152,6 +141,7 @@ class HomeFragment : Fragment() {
         barChart.apply {
             data = BarData(dataSet).apply {
                 setValueTextSize(12f)
+                setValueTextColor(Color.WHITE)
             }
             description = null
             setFitBars(true)
@@ -190,11 +180,9 @@ class HomeFragment : Fragment() {
             fragmentHomeBinding.myImg.setImageBitmap(resizedImg)
 
             val byteArrayOutputStream = ByteArrayOutputStream()
-            originalBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+            resizedImg.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
             val imageBytes = byteArrayOutputStream.toByteArray()
             val imgString = Base64.encode(imageBytes, Base64.DEFAULT)
-
-//            val decodedData = Base64.decode(imgString, Base64.DEFAULT)
             val utfString = String(imgString, charset("UTF-8"))
 
             val input = ByteBuffer.allocateDirect(224 * 224 * 3 * 4).order(ByteOrder.nativeOrder())
@@ -217,14 +205,6 @@ class HomeFragment : Fragment() {
                 }
             }
 
-            /*
-            for (i in input.array()){
-                Log.d("ByteBuffer", i.toString())
-            }
-             */
-
-            //postString()
-
             val model = FruitModel.newInstance(requireContext())
             val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
 
@@ -240,7 +220,7 @@ class HomeFragment : Fragment() {
 
             val jsonString = "{\"data\": \"$utfString\"}"
 
-            Log.d("InputString", jsonString)
+            //Log.d("InputString", jsonString)
 
             postString(jsonString)
 

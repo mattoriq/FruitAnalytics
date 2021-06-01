@@ -36,6 +36,8 @@ class DetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val actionBar = requireActivity().actionBar
+        actionBar?.setDisplayHomeAsUpEnabled(false)
         if (activity != null) {
             pieChart = binding.pieChart
             detailViewModel.fruitList.observe(viewLifecycleOwner, {
